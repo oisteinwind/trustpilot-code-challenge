@@ -26,15 +26,15 @@ def add_word_to_trie(root: TrieNode, word: str):
     # Everything finished. Mark it as the end of a word.
     node.word_finished = True
 
-def keep_word(word: str):
+def keep_word(word):
+    if not word:
+        return False    
     if len(word) > len(original_phrase):
         return False
     for character in word:
         if character not in original_phrase:
             return False
     return True
-
-
 
 def solve_phrases(trie, phrase, word_count):
     '''
@@ -47,30 +47,35 @@ def solve_phrases(trie, phrase, word_count):
         # print("current_word_count:\t"+str(current_word_count))
         # print("word_count:\t\t"+str(word_count))
         # input("Press Enter to continue...")
-        # If there are no remaining letters, we should either:
-        # 1) check if the md5 is matching solution or
-        # 2) return if the current node does not represent a full word
-        if remaining_letters == "":
-            if node.word_finished:
-                md5_candidate_solution =  hashlib.md5(candidate_solution.encode()).hexdigest()
-                if current_word_count == word_count and md5_candidate_solution in md5_solutions:
-                    print('solution:\t'+candidate_solution)
-                    print('md5:\t'+str(md5_candidate_solution))
-            return
         
+        
+        if node.word_finished:
+            # If there are no remaining letters, we should either:
+            # 1) check if the md5 is matching solution or
+            # 2) return if the current node does not represent a full word
+            if remaining_letters == "":
+                if node.word_finished:
+                    md5_candidate_solution =  hashlib.md5(candidate_solution.encode()).hexdigest()
+                    if current_word_count == word_count and md5_candidate_solution in md5_solutions:
+                        print('solution:\t'+candidate_solution)
+                        print('md5:\t'+str(md5_candidate_solution))
+                return
+            # At this point, there must be remaining letters, so we add new words by traversing the root trie once again
+            if current_word_count < word_count:
+                traverse_trie(root_trie, candidate_solution + " ", remaining_letters, current_word_count + 1)
+
         # Else we traverse the children of the current node until we are at the end of a word
         for child_node in node.children:
-            # The current node has to have a character in the remaining_letters, otherwise it can not be an anagram
+            # The current node has to have a character in the remaining_letters, otherwise it cannot be an anagram
             if child_node.char in remaining_letters:
                 # Pick out the character from the current node and remove this character in the remaining_letters
                 index = remaining_letters.index(child_node.char)
                 updated_remaining_letters = remaining_letters[0:index]+remaining_letters[index+1:]
-                # Traverse the trie with the updated remaining letters
+                # Traverse the node with the updated remaining letters
                 traverse_trie(child_node, candidate_solution + child_node.char, updated_remaining_letters, current_word_count)
-        # If we are at the end of a word, there must be remaining letters, so we add new words by traversing the trie once again
-        if node.word_finished and current_word_count < word_count:
-            traverse_trie(root_trie, candidate_solution + " ", remaining_letters, current_word_count + 1)
+    
     # Initiate the recursion by looking for single words matching the solutions
+    print("Solving for phrases of word_count:\t"+str(word_count))
     traverse_trie(trie, "", phrase, 0)
     # Increase the number of words we're looking for by 1
     solve_phrases(trie, phrase, word_count + 1)
@@ -88,5 +93,4 @@ for word in wordlist:
 
 # MD5 checksums: Easy, medium, hard
 md5_solutions = ["e4820b45d2277f3844eac66c903e84be","23170acc097c24edb98fc5488ab033fe","665e5bcb0c20062fe8abaaf4628bb154"]
-
 solve_phrases(root_trie, original_phrase, 0)
